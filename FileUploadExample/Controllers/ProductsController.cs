@@ -7,16 +7,22 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using FileUploadExample.Data;
 using FileUploadExample.Models;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using Azure.Storage.Blobs;
 
 namespace FileUploadExample.Controllers
 {
     public class ProductsController : Controller
     {
         private readonly ProductDbContext _context;
+        private readonly IConfiguration _config;
 
-        public ProductsController(ProductDbContext context)
+        public ProductsController(ProductDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         // GET: Products
@@ -54,10 +60,49 @@ namespace FileUploadExample.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ProductId,ProductName,Price,PhotoUrl")] Product product)
+        [RequestSizeLimit(8388608)] // 8MB
+        public async Task<IActionResult> Create( Product product)
         {
             if (ModelState.IsValid)
             {
+                // TODO: Validate Product Photo
+                IFormFile photo = product.ProductPhoto;
+
+                if(photo.Length > 0)
+                {
+                    // add error message
+                    // return view
+                }
+
+                string extension = Path.GetExtension(photo.FileName).ToLower();
+                string[] permittedExtensions = { ".png", ".gif", ".jpg" };
+                if (!permittedExtensions.Contains(extension))
+                {
+                    // add erro0r message
+                    // return view
+                }
+
+
+                // Generate unqiue file name
+                // Save photo to storage
+                string acc = _config.GetSection("StorageAccountName").Value;
+                string key = _config.GetSection("StorageAccountKey").Value;
+
+                // TODO: Use real connection string for dev that way we can swap out for production
+                BlobServiceClient blobService = new BlobServiceClient("UseDevelopmentStorage=true");
+
+                // Create container to hold BLOBs
+                // TODO: Handle exception if contianer already exists
+                BlobContainerClient containerClient =
+                    await blobService.CreateBlobContainerAsync("photos");
+
+                // Add BLOV to container
+                string newFileName = Guid.NewGuid().ToString() + extension;
+                BlobClient blobClient = containerClient.GetBlobClient(newFileName);
+
+                await blobClient.UploadAsync(product.ProductPhoto.OpenReadStream());
+
+                product.PhotoUrl = newFileName;
                 _context.Add(product);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
