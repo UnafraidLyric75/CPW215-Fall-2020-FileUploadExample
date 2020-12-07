@@ -94,10 +94,14 @@ namespace FileUploadExample.Controllers
 
                 // Create container to hold BLOBs
                 // TODO: Handle exception if contianer already exists
-                BlobContainerClient containerClient =
-                    await blobService.CreateBlobContainerAsync("photos");
+                BlobContainerClient containerClient = blobService.GetBlobContainerClient("photos");
 
-                await containerClient.SetAccessPolicyAsync(PublicAccessType.Blob);
+                if (!containerClient.Exists())
+                {
+                    await containerClient.CreateAsync();
+                    await containerClient.SetAccessPolicyAsync(PublicAccessType.Blob);
+                }
+
 
                 // Add BLOV to container
                 string newFileName = Guid.NewGuid().ToString() + extension;

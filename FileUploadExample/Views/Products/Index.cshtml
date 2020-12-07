@@ -1,7 +1,8 @@
 ﻿@model IEnumerable<FileUploadExample.Models.Product>
-
+@inject Microsoft.Extensions.Configuration.IConfiguration _config
 @{
     ViewData["Title"] = "Index";
+    string storageUrl = _config.GetSection("BlobStorageUrl").Value;
 }
 
 <h1>Index</h1>
@@ -34,7 +35,8 @@
                 @Html.DisplayFor(modelItem => item.Price)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.PhotoUrl)
+                @*To use concatenation in razor use prefashiezes after the @ *@
+                <img src="@(storageUrl + item.PhotoUrl) " height="150" alt="Photo of @item.ProductName" />
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.ProductId">Edit</a> |
