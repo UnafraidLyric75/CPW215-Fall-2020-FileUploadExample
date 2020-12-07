@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 
 namespace FileUploadExample.Controllers
 {
@@ -95,6 +96,8 @@ namespace FileUploadExample.Controllers
                 // TODO: Handle exception if contianer already exists
                 BlobContainerClient containerClient =
                     await blobService.CreateBlobContainerAsync("photos");
+
+                await containerClient.SetAccessPolicyAsync(PublicAccessType.Blob);
 
                 // Add BLOV to container
                 string newFileName = Guid.NewGuid().ToString() + extension;
